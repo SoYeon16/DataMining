@@ -1,0 +1,68 @@
+---
+title: "TimeSeries >> City"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+time.series.df = read.csv("C:/datamining/time_series.csv")
+```
+
+```{r}
+wd = 3 
+st = 2
+dl = 1
+
+ts = time.series.df[1,]
+ts = ts[,-1]
+x.mat = NULL
+x.mat = data.frame(x.mat)
+y.vec = NULL
+```
+
+```{r}
+for (i in 1:length(ts)){
+  ind.start = (i-1)*st + 1
+  ind.end = (i-1)*st + wd
+  ind.y = (i-1)*st + wd + dl
+  if (ind.y > length(ts)) break;
+  x.temp = ts[ind.start: ind.end]
+  names(x.temp) = names(x.mat)
+  y.temp = ts[ind.y]
+  x.mat = rbind(x.mat, x.temp)
+  y.vec = c(y.vec, y.temp)
+}
+```
+
+```{r}
+y.mat <- unlist(y.vec)
+y.mat = as.data.frame(y.mat)
+
+names(x.mat) <- c("X1", "X2", "X3")
+names(y.mat) <- c("Y1")
+```
+
+```{r}
+write.csv(x.mat, "Abia_Rural_x.csv")
+write.csv(y.mat, "Abia_Rural_y.csv")
+```
+
+```{r}
+Kano.Urban.x.df <- x.mat
+Kano.Urban.y.df <- y.mat
+```
+
+
+```{r}
+model<-lm(y.mat$Y1~. ,data=x.mat)
+summary(model)
+```
+
+```{r}
+for (j in 1:2){
+  df = data.frame(a=c(j,j+1), b=0)
+  a[[j]] =df
+}
+```
+

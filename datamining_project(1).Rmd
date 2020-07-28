@@ -1,0 +1,92 @@
+---
+title: "데이터 마이닝 프로젝트"
+output: html_notebook
+---
+
+
+데이터셋 만들기
+```{r}
+health.df = read.csv("C:/datamining/meningitis_dataset.csv")
+men.health.df = subset(health.df, meningitis > 0)
+men.health.df = men.health.df[,c(8,9,12)]
+```
+
+```{r}
+men.health.df$report_date = as.Date(men.health.df$report_date)
+men.health.df$report_date = format(men.health.df$report_date, format="%Y-%m")
+```
+
+```{r}
+str(men.health.df)
+```
+
+```{r}
+region <- paste(men.health.df$state, men.health.df$settlement)
+date <- men.health.df$report_date
+men.health.df <-cbind(region, date)
+```
+
+```{r}
+men.health.df <- as.data.frame(men.health.df)
+```
+
+
+```{r}
+num.of.201801 = subset(men.health.df, men.health.df$date == '2018-01')
+d.2018.01 = table(num.of.201801$region)
+
+num.of.201802 = subset(men.health.df, men.health.df$date == '2018-02')
+d.2018.02 = table(num.of.201802$region)
+
+num.of.201803 = subset(men.health.df, men.health.df$date == '2018-03')
+d.2018.03 = table(num.of.201803$region)
+
+num.of.201804 = subset(men.health.df, men.health.df$date == '2018-04')
+d.2018.04 = table(num.of.201804$region)
+
+num.of.201805 = subset(men.health.df, men.health.df$date == '2018-05')
+d.2018.05 = table(num.of.201805$region)
+
+num.of.201806 = subset(men.health.df, men.health.df$date == '2018-06')
+d.2018.06 = table(num.of.201806$region)
+
+num.of.201807 = subset(men.health.df, men.health.df$date == '2018-07')
+d.2018.07 = table(num.of.201807$region)
+
+num.of.201808 = subset(men.health.df, men.health.df$date == '2018-08')
+d.2018.08 = table(num.of.201808$region)
+
+num.of.201809 = subset(men.health.df, men.health.df$date == '2018-09')
+d.2018.09 = table(num.of.201809$region)
+
+num.of.201810 = subset(men.health.df, men.health.df$date == '2018-10')
+d.2018.10 = table(num.of.201810$region)
+
+num.of.201811 = subset(men.health.df, men.health.df$date == '2018-11')
+d.2018.11 = table(num.of.201811$region)
+
+num.of.201812 = subset(men.health.df, men.health.df$date == '2018-12')
+d.2018.12 = table(num.of.201812$region)
+```
+
+
+```{r}
+time.series = cbind(d.2009.01, d.2009.02, d.2009.03, d.2009.04, d.2009.05, d.2009.06, d.2009.07, d.2009.08, d.2009.09, d.2009.10, d.2009.11, d.2009.12)
+```
+
+```{r}
+time.series = cbind(time.series, d.2018.01, d.2018.02, d.2018.03, d.2018.04, d.2018.05, d.2018.06, d.2018.07, d.2018.08, d.2018.09, d.2018.10, d.2018.11, d.2018.12)
+```
+
+```{r}
+men.time.series <- as.data.frame(time.series)
+```
+
+```{r}
+write.csv(men.time.series, "C:/datamining/time_series.csv")
+```
+
+```{r}
+str(men.time.series)
+```
+

@@ -1,0 +1,468 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+#데이터 불러오기
+
+```{r}
+train.normal <- read.csv("C:/datamining/train_normal.csv")
+val.normal1 <- read.csv("C:/datamining/val_normal1.csv")
+val.normal2 <- read.csv("C:/datamining/val_normal2.csv")
+val.spread <- read.csv("C:/datamining/val_spread.csv")
+test.normal <- read.csv("C:/datamining/test_normal.csv")
+test.spread <- read.csv("C:/datamining/test_spread.csv")
+```
+
+```{r}
+train.normal = train.normal[,-1]
+val.normal1 = val.normal1[,-1]
+val.normal2 = val.normal2[,-1]
+test.normal = test.normal[,-1]
+val.spread = val.spread[,-1]
+test.spread = test.spread[,-1]
+```
+
+
+########### 평균비교
+
+#validation set을 통한 이상치의 기준마련
+```{r}
+val.normal.m <- val.normal2
+val.spread.m <- val.spread
+```
+
+```{r}
+val.normal.m$x.mean <- apply(val.normal.m[,1:3], 1, mean)
+val.spread.m$x.mean <- apply(val.spread.m[,1:3], 1, mean)
+```
+
+# AVG(X1,X2,X3)와 Y의 차이 구하기
+```{r}
+val.spread.m$gap = 0
+
+for (i in 1:dim(val.spread.m)){
+ val.spread.m[i,]$gap = (val.spread.m[i,]$Y - val.spread.m[i,]$x.mean)
+ if (val.spread.m[i,]$gap < 0) {
+    val.spread.m[i,]$gap = -val.spread.m[i,]$gap
+ }
+}
+
+val.normal.m$gap = 0
+
+for (i in 1:dim(val.normal.m)){
+ val.normal.m[i,]$gap = (val.normal.m[i,]$Y - val.normal.m[i,]$x.mean)
+ if (val.normal.m[i,]$gap < 0) {
+    val.normal.m[i,]$gap = -val.normal.m[i,]$gap
+ }
+}
+```
+
+# gap의 최대, 최소, 평균 알아보기
+```{r}
+min(val.normal.m$gap)
+max(val.normal.m$gap)
+mean(val.normal.m$gap)
+min(val.spread.m$gap)
+max(val.spread.m$gap)
+mean(val.spread.m$gap)
+```
+
+```{r}
+sort(val.normal.m$gap, decreasing = T)
+```
+
+```{r}
+sort(val.spread.m$gap)
+```
+
+#0은 유행이 아닌 상태, 1은 유행인 상태
+```{r}
+val.normal.m$state = 0
+val.spread.m$state = 1
+```
+
+```{r}
+val.total.m = rbind(val.normal.m, val.spread.m)
+```
+
+```{r}
+library(pROC)
+
+r3 <- roc(val.total.m$state, val.total.m$gap)
+plot.roc(r3)
+```
+
+```{r}
+boxplot(val.normal.m$gap, col="skyblue", xlab="normal", ylab="frequency")
+boxplot(val.spread.m$gap, col="skyblue", xlab="spread", ylab="frequency")
+```
+
+```{r}
+sort(val.total.m$gap)
+```
+
+#이상치 기준 설정
+```{r}
+sort(val.total.m$gap, decreasing = T)[91]
+sort(val.total.m$gap, decreasing = T)[92]
+
+(sort(val.total.m$gap, decreasing = T)[91]+sort(val.total.m$gap, decreasing = T)[92])/2
+```
+
+#mean value TEST
+```{r}
+test.normal.m <- test.normal
+test.spread.m <- test.spread
+```
+
+```{r}
+test.normal.m$x.mean <- apply(test.normal.m[,1:3], 1, mean)
+test.spread.m$x.mean <- apply(test.spread.m[,1:3], 1, mean)
+```
+
+# AVG(X1,X2,X3)와 Y의 차이 구하기
+```{r}
+test.spread.m$gap = 0
+
+for (i in 1:dim(test.spread.m)){
+ test.spread.m[i,]$gap = (test.spread.m[i,]$Y - test.spread.m[i,]$x.mean)
+ if (test.spread.m[i,]$gap < 0) {
+    test.spread.m[i,]$gap = -test.spread.m[i,]$gap
+ }
+}
+
+test.normal.m$gap = 0
+
+for (i in 1:dim(test.normal.m)){
+ test.normal.m[i,]$gap = (test.normal.m[i,]$Y - test.normal.m[i,]$x.mean)
+ if (test.normal.m[i,]$gap < 0) {
+    test.normal.m[i,]$gap = -test.normal.m[i,]$gap
+ }
+}
+```
+
+
+```{r}
+sort(test.normal.m$gap, decreasing = T)
+```
+
+```{r}
+sort(test.spread.m$gap)
+```
+
+
+
+
+
+
+
+
+################linear regression
+
+#모델 설계
+```{r}
+normal.model<-lm(Y~. ,data=train.normal)
+summary(normal.model)
+```
+
+#lm 이상치 검정
+```{r}
+val.normal.lm = val.normal2
+val.spread.lm = val.spread
+val.normal.lm$y.hat = 0
+val.spread.lm$y.hat = 0
+```
+
+```{r}
+val.normal.lm$y.hat <- predict(normal.model, val.normal.lm[,1:3])
+val.spread.lm$y.hat <- predict(normal.model, val.spread.lm[,1:3])
+```
+
+```{r}
+val.normal.lm$gap = 0
+val.spread.lm$gap = 0
+```
+
+```{r}
+for (i in 1:dim(val.normal.lm)){
+ val.normal.lm[i,]$gap = val.normal.lm[i,]$Y - val.normal.lm[i,]$y.hat
+ if (val.normal.lm[i,]$gap < 0){
+   val.normal.lm[i,]$gap = -val.normal.lm[i,]$gap
+ }
+}
+```
+
+```{r}
+for (i in 1:dim(val.spread.lm)){
+ val.spread.lm[i,]$gap = val.spread.lm[i,]$Y - val.spread.lm[i,]$y.hat
+ if (val.spread.lm[i,]$gap < 0){
+   val.spread.lm[i,]$gap = -val.spread.lm[i,]$gap
+ }
+}
+```
+
+```{r}
+min(val.normal.lm$gap)
+min(val.spread.lm$gap)
+max(val.normal.lm$gap)
+max(val.spread.lm$gap)
+mean(val.normal.lm$gap)
+mean(val.spread.lm$gap)
+```
+
+#roc 곡선
+```{r}
+val.normal.lm$state = 0
+val.spread.lm$state = 1
+val.total.lm = rbind(val.normal.lm, val.spread.lm)
+```
+
+
+```{r}
+library(pROC)
+
+r <- roc(val.total.lm$state, val.total.lm$gap)
+plot.roc(r)
+```
+
+
+
+#lm 이상치검정 test
+```{r}
+test.normal.lm = test.normal
+test.spread.lm = test.spread
+test.normal.lm$y.hat = 0
+test.spread.lm$y.hat = 0
+```
+
+```{r}
+test.normal.lm$y.hat <- predict(normal.model, test.normal.lm[,1:3])
+test.spread.lm$y.hat <- predict(normal.model, test.spread.lm[,1:3])
+```
+
+```{r}
+test.normal.lm$gap = 0
+test.spread.lm$gap = 0
+```
+
+```{r}
+for (i in 1:dim(test.normal.lm)){
+ test.normal.lm[i,]$gap = test.normal.lm[i,]$Y - test.normal.lm[i,]$y.hat
+ if (test.normal.lm[i,]$gap < 0){
+   test.normal.lm[i,]$gap = -test.normal.lm[i,]$gap
+ }
+}
+```
+
+```{r}
+for (i in 1:dim(test.spread.lm)){
+ test.spread.lm[i,]$gap = test.spread.lm[i,]$Y - test.spread.lm[i,]$y.hat
+ if (test.spread.lm[i,]$gap < 0){
+   test.spread.lm[i,]$gap = -test.spread.lm[i,]$gap
+ }
+}
+```
+
+
+
+
+
+
+
+######################Random Forest
+
+#모델 선택
+```{r}
+library(ranger)
+
+set.seed(1)
+mdl_rf1 = ranger(Y ~., data=train.normal, mtry=1, num.trees=1000, seed=10, respect.unordered.factors = 'order', classification = FALSE, importance='impurity')
+mdl_rf1
+```
+
+```{r}
+set.seed(2)
+mdl_rf2 = ranger(Y ~., data=train.normal, mtry=2, num.trees=1000, seed=10, respect.unordered.factors = 'order', classification = FALSE, importance='impurity')
+mdl_rf2
+```
+
+```{r}
+set.seed(3)
+mdl_rf3 = ranger(Y ~., data=train.normal, mtry=3, num.trees=1000, seed=10, respect.unordered.factors = 'order', classification = FALSE, importance='impurity')
+mdl_rf3
+```
+
+```{r}
+val.normal.rf1 = val.normal1
+
+val.normal.rf1$yhat_rf = predict(mdl_rf1, data=val.normal.rf1, type="response")$predictions
+```
+
+```{r}
+val.normal.rf2 = val.normal1
+
+val.normal.rf2$yhat_rf = predict(mdl_rf2, data=val.normal.rf2, type="response")$predictions
+```
+
+```{r}
+val.normal.rf3 = val.normal1
+
+val.normal.rf3$yhat_rf = predict(mdl_rf3, data=val.normal.rf3, type="response")$predictions
+```
+
+
+```{r}
+val.normal.rf1$error = 0
+
+for (i in 1:dim(val.normal.rf1)[1]){
+ val.normal.rf1[i,]$error = (val.normal.rf1[i,]$Y - val.normal.rf1[i,]$yhat_rf)^2
+}
+```
+
+```{r}
+val.normal.rf2$error = 0
+
+for (i in 1:dim(val.normal.rf2)[1]){
+ val.normal.rf2[i,]$error = (val.normal.rf2[i,]$Y - val.normal.rf2[i,]$yhat_rf)^2
+}
+```
+
+```{r}
+val.normal.rf3$error = 0
+
+for (i in 1:dim(val.normal.rf3)[1]){
+ val.normal.rf3[i,]$error = (val.normal.rf3[i,]$Y - val.normal.rf3[i,]$yhat_rf)^2
+}
+```
+
+```{r}
+mean(val.normal.rf1$error)
+mean(val.normal.rf2$error)
+mean(val.normal.rf3$error)
+```
+
+
+
+
+##Random Forest 이상치 기준 validation
+```{r}
+val.normal.rf = val.normal2
+val.spread.rf = val.spread
+```
+
+```{r}
+val.normal.rf$yhat_rf = predict(mdl_rf1, data=val.normal.rf, type="response")$predictions
+```
+
+```{r}
+val.spread.rf$yhat_rf = predict(mdl_rf1, data=val.spread.rf, type="response")$predictions
+```
+
+```{r}
+val.normal.rf$gap = 0
+
+for (i in 1:dim(val.normal.rf)){
+ val.normal.rf[i,]$gap = val.normal.rf[i,]$Y - val.normal.rf[i,]$yhat_rf
+ if (val.normal.rf[i,]$gap < 0){
+   val.normal.rf[i,]$gap = -val.normal.rf[i,]$gap
+ }
+}
+```
+
+```{r}
+val.spread.rf$gap = 0
+
+for (i in 1:dim(val.spread.rf)){
+ val.spread.rf[i,]$gap = val.spread.rf[i,]$Y - val.spread.rf[i,]$yhat_rf
+ if (val.spread.rf[i,]$gap < 0){
+   val.spread.rf[i,]$gap = -val.spread.rf[i,]$gap
+ }
+}
+```
+
+
+```{r}
+min(val.normal.rf$gap)
+max(val.normal.rf$gap)
+mean(val.normal.rf$gap)
+min(val.spread.rf$gap)
+max(val.spread.rf$gap)
+mean(val.spread.rf$gap)
+```
+
+```{r}
+val.normal.rf$state = 0
+val.spread.rf$state = 1
+
+val.total.rf = rbind(val.normal.rf, val.spread.rf)
+```
+
+#ROC 곡선
+```{r}
+library(pROC)
+
+r2 <- roc(val.total.rf$state, val.total.rf$gap)
+plot.roc(r2)
+```
+
+#boxplot
+```{r}
+boxplot(val.normal.rf$gap, col="yellow", xlab="normal", ylab="frequency")
+boxplot(val.spread.rf$gap, col="yellow", xlab="spread", ylab="frequency")
+```
+
+#91번째와 92번째 평균 내기
+```{r}
+sort(val.total.rf$gap, decreasing = TRUE)
+```
+
+```{r}
+(sort(val.total.rf$gap, decreasing = TRUE)[91] + sort(val.total.rf$gap, decreasing = TRUE)[92])/2
+```
+
+
+
+#Random Forest test
+```{r}
+test.normal.rf = test.normal
+test.spread.rf = test.spread
+```
+
+```{r}
+test.normal.rf$yhat_rf = predict(mdl_rf1, data=test.normal.rf, type="response")$predictions
+```
+
+```{r}
+test.spread.rf$yhat_rf = predict(mdl_rf1, data=test.spread.rf, type="response")$predictions
+```
+
+```{r}
+test.normal.rf$gap = 0
+test.spread.rf$gap = 0
+
+for (i in 1:dim(test.normal.rf)){
+ test.normal.rf[i,]$gap = test.normal.rf[i,]$Y - test.normal.rf[i,]$yhat_rf
+ if (test.normal.rf[i,]$gap < 0){
+   test.normal.rf[i,]$gap = -test.normal.rf[i,]$gap
+ }
+}
+
+for (i in 1:dim(test.spread.rf)){
+ test.spread.rf[i,]$gap = test.spread.rf[i,]$Y - test.spread.rf[i,]$yhat_rf
+ if (test.spread.rf[i,]$gap < 0){
+   test.spread.rf[i,]$gap = -test.spread.rf[i,]$gap
+ }
+}
+```
+
+#기준점을 기준으로 count
+```{r}
+sort(test.spread.rf$gap)
+```
+
+```{r}
+sort(test.normal.rf$gap, decreasing = T)
+```
+
+
